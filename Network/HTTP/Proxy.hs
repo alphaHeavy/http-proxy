@@ -33,6 +33,7 @@ module Network.HTTP.Proxy
 
     , runProxy
     , runProxySettings
+    , runProxySettingsApp
     , runProxySettingsSocket
     , defaultProxySettings
     )
@@ -80,6 +81,12 @@ runProxySettings :: Settings -> IO ()
 runProxySettings set = do
     mgr <- HC.newManager HC.tlsManagerSettings
     Warp.runSettings (warpSettings set) $ proxyApp set mgr
+
+-- | Run a HTTP and HTTPS proxy server with a customer app
+runProxySettingsApp :: Settings -> (Settings -> HC.Manager -> Wai.Request -> (Wai.Response -> IO Wai.ResponseReceived) -> IO Wai.ResponseReceived) -> IO ()
+runProxySettingsApp set app = do
+  mgr <- HC.newManager HC.tlsManagerSettings
+  Warp.runSettings (warpSettings set) (app set mgr)
 
 -- | Run a HTTP and HTTPS proxy server with the specified settings but provide
 -- it with a Socket to accept connections on. The Socket should have already
