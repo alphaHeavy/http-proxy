@@ -62,13 +62,10 @@ mkTestRequest method scheme path mbody = do
                         Http -> httpTestPort portsDef
                         Https -> httpsTestPort portsDef
         url = map toLower (show scheme) ++ "://localhost:" ++ port ++ path
-    req <- HC.parseUrl url
+    req <- HC.parseRequest url
     return $ req
         { HC.method = if HC.method req /= method then method else HC.method req
         , HC.requestBody = fromMaybe (HC.requestBody req) mbody
-        -- In this test program we want to pass error pages back to the test
-        -- function so the error output can be compared.
-        , HC.checkStatus = \ _ _ _ -> Nothing
         }
 
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 ------------------------------------------------------------
 -- Copyright : Erik de Castro Lopo <erikd@mega-nerd.com>
@@ -12,6 +13,7 @@ import Control.Monad.Trans.Resource
 import Data.Conduit
 import Data.Int (Int64)
 import Data.Monoid
+import System.Environment
 import Test.Hspec
 import Test.Hspec.QuickCheck
 
@@ -37,7 +39,12 @@ proxyTestDebug :: Bool
 proxyTestDebug = False
 
 main :: IO ()
-main =
+main = do
+#if __GLASGOW_HASKELL__ > 706
+    -- Clear the `http_proxy` enviroment variable. We can't use `unsetEnv` if
+    -- we want to support ghc 7.6.
+    unsetEnv "http_proxy"
+#endif
     bracket
         (mapM async [ runTestServer, runTestServerTLS ])
         (mapM_ cancel)
@@ -147,7 +154,7 @@ requestTest = describe "Request:" $ do
             -- Getting a TlsException shows that we have successfully upgraded
             -- from HTTP to HTTPS. Its not possible to ignore this failure
             -- because its made by the http-conduit inside the proxy.
-            BS.take 12 (resultBS result) `shouldBe` "TlsException"
+            BS.take 13 (resultBS result) `shouldBe` "HttpException"
     it "Can provide a proxy Response." $
         withTestProxy proxySettingsProxyResponse $ \ testProxyPort -> do
             req <- addTestProxy testProxyPort <$> mkGetRequest Http "/whatever"
